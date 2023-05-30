@@ -30,6 +30,7 @@ import org.eclipse.tractusx.puris.backend.common.api.domain.model.datatype.DT_Us
 import org.eclipse.tractusx.puris.backend.common.api.logic.dto.MessageHeaderDto;
 import org.eclipse.tractusx.puris.backend.common.api.logic.dto.RequestDto;
 import org.eclipse.tractusx.puris.backend.common.api.logic.service.RequestService;
+import org.eclipse.tractusx.puris.backend.common.edc.logic.service.EdcAdapterService;
 import org.eclipse.tractusx.puris.backend.masterdata.domain.model.Material;
 import org.eclipse.tractusx.puris.backend.masterdata.domain.model.Partner;
 import org.eclipse.tractusx.puris.backend.masterdata.logic.service.MaterialService;
@@ -84,6 +85,9 @@ public class DataInjectionCommandLineRunner implements CommandLineRunner {
     @Autowired
     private RequestService requestService;
 
+    @Autowired
+    private EdcAdapterService edcAdapterService;
+
     @Value("${puris.demonstrator.role}")
     private String demoRole;
 
@@ -98,17 +102,15 @@ public class DataInjectionCommandLineRunner implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
 
+        log.info("Creating setup for " + demoRole.toUpperCase());
         if (demoRole.equals("supplier")) {
             supplierRoleSetup();
         } else if (demoRole.equals(("customer"))) {
             customerRoleSetup();
             createRequest();
         } else {
-            createMasterData();
-            createRequest();
+            log.info("No role specific setup was created");
         }
-
-
     }
 
     private void customerRoleSetup() throws JsonProcessingException {
@@ -227,10 +229,10 @@ public class DataInjectionCommandLineRunner implements CommandLineRunner {
 
     private Partner createAndGetCustomerPartner() {
         Partner customerPartnerEntity = new Partner(
-                "Test Customer",
+                "Sceanrio Customer",
                 true,
                 false,
-                "TODO",
+                "http://sokrates-controlplane:8084/api/v1/ids",
                 "BPNL4444444444XX",
                 "BPNS4444444444XX"
         );
@@ -251,9 +253,9 @@ public class DataInjectionCommandLineRunner implements CommandLineRunner {
                 "BPNS1234567890ZZ"
         );
         supplierPartnerEntity = partnerService.create(supplierPartnerEntity);
-        log.info(String.format("Created customer partner: %s", supplierPartnerEntity));
+        log.info(String.format("Created supplier partner: %s", supplierPartnerEntity));
         supplierPartnerEntity = partnerService.findByUuid(supplierPartnerEntity.getUuid());
-        log.info(String.format("Found customer partner: %s", supplierPartnerEntity));
+        log.info(String.format("Found supplier partner: %s", supplierPartnerEntity));
         return supplierPartnerEntity;
     }
 
@@ -262,7 +264,7 @@ public class DataInjectionCommandLineRunner implements CommandLineRunner {
                 "Non-Scenario Customer",
                 true,
                 false,
-                "TODO",
+                "(None Provided!)>",
                 "BPNL2222222222RR",
                 "BPNL2222222222RR"
         );
@@ -293,382 +295,6 @@ public class DataInjectionCommandLineRunner implements CommandLineRunner {
                 "0",
                 "central control unit"
         );
-    }
-
-    private void createMasterDataSupplier() throws JsonProcessingException {
-        //supplier + material
-        Partner customerPartnerEntity = new Partner(
-                "Scenario Supplier",
-                false,
-                true,
-                "http://plato-controlplane:8084/api/v1/ids",
-                "BPNL1234567890ZZ",
-                "BPNS1234567890ZZ"
-        );
-        customerPartnerEntity = partnerService.create(customerPartnerEntity);
-        log.info(String.format("Created CustomerPartner: %s", customerPartnerEntity));
-        customerPartnerEntity = partnerService.findByUuid(customerPartnerEntity.getUuid());
-        log.info(String.format("Found customer partner: %s", customerPartnerEntity));
-
-
-        Material semiconductorEntity = new Material(
-                false,
-                true,
-                "MNR-7307-AU340474.002",
-                "MNR-8101-ID146955.001",
-                "",
-                "semiconductor"
-        );
-        semiconductorEntity.addPartnerToOrderedByParnters(customerPartnerEntity);
-        semiconductorEntity = materialService.create(semiconductorEntity);
-        log.info(String.format("Created product: %s", semiconductorEntity));
-
-        List<Material> materialsFound = materialService.findAllProducts();
-        log.info(String.format("Found product: %s", materialsFound));
-
-        log.info(String.format("UUID of supplier partner: %s", customerPartnerEntity.getUuid()));
-        customerPartnerEntity = partnerService.findByUuid(customerPartnerEntity.getUuid());
-        log.info(String.format("Found supplier partner: %s", customerPartnerEntity));
-        log.info(String.format("Relationship to material: %s", customerPartnerEntity.getSuppliesMaterials()));
-
-
-        // Create Product Stock
-        // get latest product due to relationships
-
-        ProductStock productStockEntity = new ProductStock(
-                semiconductorEntity,
-                20,
-                "BPNS1234567890ZZ",
-                new Date(),
-                customerPartnerEntity
-        );
-
-
-        productStockEntity = productStockService.create(productStockEntity);
-        log.info(String.format("Created productStock: %s", productStockEntity.toString()));
-
-        List<ProductStock> foundProductStocks =
-                productStockService
-                        .findAllByMaterialNumberCustomerAndAllocatedToCustomerBpnl(
-                                semiconductorEntity.getMaterialNumberCustomer(),
-                                customerPartnerEntity.getBpnl());
-        log.info(String.format("Found productStocks by material number and allocated to customer " +
-                "bpnl: %s", foundProductStocks));
-    }
-
-    private void createMasterDataCustomer() throws JsonProcessingException {
-        //supplier + material
-        Partner supplierPartner = new Partner(
-                "Scenario Supplier",
-                false,
-                true,
-                "http://plato-controlplane:8084/api/v1/ids",
-                "BPNL1234567890ZZ",
-                "BPNS1234567890ZZ"
-        );
-        supplierPartner = partnerService.create(supplierPartner);
-        log.info(String.format("Created SupplierPartner: %s", supplierPartner));
-        supplierPartner = partnerService.findByUuid(supplierPartner.getUuid());
-        log.info(String.format("Found supplier partner: %s", supplierPartner));
-
-
-        Material semiconductorEntity = new Material(
-                true,
-                false,
-                "MNR-7307-AU340474.002",
-                "MNR-8101-ID146955.001",
-                "",
-                "semiconductor"
-        );
-        semiconductorEntity.addPartnerToSuppliedByPartners(supplierPartner);
-        semiconductorEntity = materialService.create(semiconductorEntity);
-        log.info(String.format("Created material: %s", semiconductorEntity));
-
-        List<Material> materialsFound = materialService.findAllMaterials();
-        log.info(String.format("Found Material: %s", materialsFound));
-
-        log.info(String.format("UUID of supplier partner: %s", supplierPartner.getUuid()));
-        supplierPartner = partnerService.findByUuid(supplierPartner.getUuid());
-        log.info(String.format("Found supplier partner: %s", supplierPartner));
-        log.info(String.format("Relationship to material: %s", supplierPartner.getSuppliesMaterials()));
-
-        // customer + material
-        Partner customerPartnerEntity = new Partner(
-                "Non-Scenario Customer",
-                true,
-                false,
-                "TODO",
-                "BPNL2222222222RR",
-                "BPNL2222222222RR"
-        );
-        customerPartnerEntity = partnerService.create(customerPartnerEntity);
-
-        Material centralControlUnitEntity = new Material(
-                false,
-                true,
-                "MNR-4177-C",
-                "MNR-4177-S",
-                "0",
-                "central control unit"
-        );
-
-        centralControlUnitEntity.addPartnerToOrderedByParnters(customerPartnerEntity);
-
-        centralControlUnitEntity = materialService.create(centralControlUnitEntity);
-        log.info(String.format("Created Product: %s", centralControlUnitEntity));
-
-        List<Material> productsFound = materialService.findAllProducts();
-        log.info(String.format("Found Products: %s", productsFound));
-
-
-        centralControlUnitEntity =
-                materialService.findProductByMaterialNumberCustomer(centralControlUnitEntity.getMaterialNumberCustomer());
-        log.info(String.format("Found product by materialNumber customer: %s",
-                centralControlUnitEntity));
-
-        customerPartnerEntity = partnerService.findByUuid(customerPartnerEntity.getUuid());
-        log.info(String.format("Created supplier partner: %s", customerPartnerEntity));
-        log.info(String.format("Relationship to product: %s",
-                customerPartnerEntity.getOrdersProducts()));
-
-        Material existingMaterial =
-                materialService.findByUuid(semiconductorEntity.getUuid());
-        log.info(String.format("Found existingMaterial by uuid: %s",
-                existingMaterial));
-
-        Material existingProduct =
-                materialService.findProductByMaterialNumberCustomer(centralControlUnitEntity.getMaterialNumberCustomer());
-        log.info(String.format("Found existingProduct by customer number: %s",
-                existingMaterial));
-
-        List<Material> existingProducts =
-                materialService.findAllProducts();
-        log.info(String.format("Found existingProducts by product flag true: %s",
-                existingProducts));
-
-        log.info(String.format("Relationship centralControlUnitEntity -> orderedByPartners: %s",
-                centralControlUnitEntity.getOrderedByPartners().toString()));
-
-
-        // Create Material Stock
-        MaterialStock materialStockEntity = new MaterialStock(
-                semiconductorEntity,
-                20,
-                "BPNS4444444444XX",
-                new Date()
-        );
-
-        materialStockEntity = materialStockService.create(materialStockEntity);
-        log.info(String.format("Created materialStock: %s", materialStockEntity));
-
-        List<MaterialStock> foundMaterialStocks =
-                materialStockService.findAllByMaterialNumberCustomer(semiconductorEntity.getMaterialNumberCustomer());
-        log.info(String.format("Found materialStock: %s", foundMaterialStocks));
-
-
-        // Create Product Stock
-        // get latest product due to relationships
-
-        ProductStock productStockEntity = new ProductStock(
-                centralControlUnitEntity,
-                20,
-                "BPNS4444444444XX",
-                new Date(),
-                customerPartnerEntity
-        );
-
-
-        productStockEntity = productStockService.create(productStockEntity);
-        log.info(String.format("Created productStock: %s", productStockEntity.toString()));
-
-        List<ProductStock> foundProductStocks =
-                productStockService
-                        .findAllByMaterialNumberCustomerAndAllocatedToCustomerBpnl(
-                                centralControlUnitEntity.getMaterialNumberCustomer(),
-                                customerPartnerEntity.getBpnl());
-        log.info(String.format("Found productStocks by material number and allocated to customer " +
-                "bpnl: %s", foundProductStocks));
-
-
-        // Create PartnerProductStock
-        semiconductorEntity = materialService.findByUuid(semiconductorEntity.getUuid());
-
-        supplierPartner = partnerService.findByUuid(supplierPartner.getUuid());
-
-        PartnerProductStock partnerProductStockEntity = new PartnerProductStock(
-                semiconductorEntity,
-                20,
-                supplierPartner.getSiteBpns(),
-                new Date(),
-                supplierPartner
-        );
-
-        partnerProductStockEntity = partnerProductStockService.create(partnerProductStockEntity);
-        log.info(String.format("Created partnerProductStock: %s", partnerProductStockEntity));
-
-        ProductStockDto productStockDto = modelMapper.map(productStockEntity,
-                ProductStockDto.class);
-        ProductStockSammDto productStockSammDto = productStockSammMapper.toSamm(productStockDto);
-
-        log.info(objectMapper.writeValueAsString(productStockSammDto));
-    }
-
-
-    private void createMasterData() throws JsonProcessingException {
-        //supplier + material
-        Partner supplierPartner = new Partner(
-                "Test Supplier",
-                false,
-                true,
-                "TODO",
-                "BPNL1234567890ZZ",
-                "BPNS1234567890ZZ"
-        );
-        supplierPartner = partnerService.create(supplierPartner);
-        log.info(String.format("Created SupplierPartner: %s", supplierPartner));
-        supplierPartner = partnerService.findByUuid(supplierPartner.getUuid());
-        log.info(String.format("Found supplier partner: %s", supplierPartner));
-
-
-        Material semiconductorEntity = new Material(
-                true,
-                false,
-                "MNR-7307-AU340474.002",
-                "MNR-8101-ID146955.001",
-                "",
-                "semiconductor"
-        );
-        semiconductorEntity.addPartnerToSuppliedByPartners(supplierPartner);
-        semiconductorEntity = materialService.create(semiconductorEntity);
-        log.info(String.format("Created material: %s", semiconductorEntity));
-
-        List<Material> materialsFound = materialService.findAllMaterials();
-        log.info(String.format("Found Material: %s", materialsFound));
-
-        log.info(String.format("UUID of supplier partner: %s", supplierPartner.getUuid()));
-        supplierPartner = partnerService.findByUuid(supplierPartner.getUuid());
-        log.info(String.format("Found supplier partner: %s", supplierPartner));
-        log.info(String.format("Relationship to material: %s", supplierPartner.getSuppliesMaterials()));
-
-        // customer + material
-        Partner customerPartnerEntity = new Partner(
-                "Test Customer",
-                true,
-                false,
-                "TODO",
-                "BPNL4444444444XX",
-                "BPNS4444444444XX"
-        );
-        customerPartnerEntity = partnerService.create(customerPartnerEntity);
-
-        Material centralControlUnitEntity = new Material(
-                false,
-                true,
-                "MNR-4177-C",
-                "MNR-4177-S",
-                "0",
-                "central control unit"
-        );
-
-        centralControlUnitEntity.addPartnerToOrderedByParnters(customerPartnerEntity);
-
-        centralControlUnitEntity = materialService.create(centralControlUnitEntity);
-        log.info(String.format("Created Product: %s", centralControlUnitEntity));
-
-        List<Material> productsFound = materialService.findAllProducts();
-        log.info(String.format("Found Products: %s", productsFound));
-
-
-        centralControlUnitEntity =
-                materialService.findProductByMaterialNumberCustomer(centralControlUnitEntity.getMaterialNumberCustomer());
-        log.info(String.format("Found product by materialNumber customer: %s",
-                centralControlUnitEntity));
-
-        customerPartnerEntity = partnerService.findByUuid(customerPartnerEntity.getUuid());
-        log.info(String.format("Created supplier partner: %s", customerPartnerEntity));
-        log.info(String.format("Relationship to product: %s",
-                customerPartnerEntity.getOrdersProducts()));
-
-        Material existingMaterial =
-                materialService.findByUuid(semiconductorEntity.getUuid());
-        log.info(String.format("Found existingMaterial by uuid: %s",
-                existingMaterial));
-
-        Material existingProduct =
-                materialService.findProductByMaterialNumberCustomer(centralControlUnitEntity.getMaterialNumberCustomer());
-        log.info(String.format("Found existingProduct by customer number: %s",
-                existingMaterial));
-
-        List<Material> existingProducts =
-                materialService.findAllProducts();
-        log.info(String.format("Found existingProducts by product flag true: %s",
-                existingProducts));
-
-        log.info(String.format("Relationship centralControlUnitEntity -> orderedByPartners: %s",
-                centralControlUnitEntity.getOrderedByPartners().toString()));
-
-
-        // Create Material Stock
-        MaterialStock materialStockEntity = new MaterialStock(
-                semiconductorEntity,
-                20,
-                "BPNS1111111110ZZ",
-                new Date()
-        );
-
-        materialStockEntity = materialStockService.create(materialStockEntity);
-        log.info(String.format("Created materialStock: %s", materialStockEntity));
-
-        List<MaterialStock> foundMaterialStocks =
-                materialStockService.findAllByMaterialNumberCustomer(semiconductorEntity.getMaterialNumberCustomer());
-        log.info(String.format("Found materialStock: %s", foundMaterialStocks));
-
-
-        // Create Product Stock
-        // get latest product due to relationships
-
-        ProductStock productStockEntity = new ProductStock(
-                centralControlUnitEntity,
-                20,
-                "BPNS1111111110ZZ",
-                new Date(),
-                customerPartnerEntity
-        );
-
-
-        productStockEntity = productStockService.create(productStockEntity);
-        log.info(String.format("Created productStock: %s", productStockEntity.toString()));
-
-        List<ProductStock> foundProductStocks =
-                productStockService
-                        .findAllByMaterialNumberCustomerAndAllocatedToCustomerBpnl(
-                                centralControlUnitEntity.getMaterialNumberCustomer(),
-                                customerPartnerEntity.getBpnl());
-        log.info(String.format("Found productStocks by material number and allocated to customer " +
-                "bpnl: %s", foundProductStocks));
-
-
-        // Create PartnerProductStock
-        semiconductorEntity = materialService.findByUuid(semiconductorEntity.getUuid());
-
-        supplierPartner = partnerService.findByUuid(supplierPartner.getUuid());
-
-        PartnerProductStock partnerProductStockEntity = new PartnerProductStock(
-                semiconductorEntity,
-                20,
-                supplierPartner.getSiteBpns(),
-                new Date(),
-                supplierPartner
-        );
-
-        partnerProductStockEntity = partnerProductStockService.create(partnerProductStockEntity);
-        log.info(String.format("Created partnerProductStock: %s", partnerProductStockEntity));
-
-        ProductStockDto productStockDto = modelMapper.map(productStockEntity,
-                ProductStockDto.class);
-        ProductStockSammDto productStockSammDto = productStockSammMapper.toSamm(productStockDto);
-
-        log.info(objectMapper.writeValueAsString(productStockSammDto));
     }
 
     private void createRequest() throws JsonProcessingException {
