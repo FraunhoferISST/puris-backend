@@ -104,19 +104,27 @@ public class DataInjectionCommandLineRunner implements CommandLineRunner {
 
         log.info("Creating setup for " + demoRole.toUpperCase());
         if (demoRole.equals("supplier")) {
-            supplierRoleSetup();
+            setupSupplierRole();
         } else if (demoRole.equals(("customer"))) {
-            customerRoleSetup();
+            setupCustomerRole();
             createRequest();
         } else {
             log.info("No role specific setup was created");
         }
     }
 
-    private void customerRoleSetup() throws JsonProcessingException {
+    /**
+     * Generates an initial set of data for a customer within the demonstration context. 
+     * @throws JsonProcessingException
+     */
+    private void setupCustomerRole() throws JsonProcessingException {
         Partner supplierPartner = createAndGetSupplierPartner();
-        Material semiconductorMaterial = getSemiconductorMaterial();
+        Material semiconductorMaterial = getNewSemiconductorMaterial();
         semiconductorMaterial.addPartnerToSuppliedByPartners(supplierPartner);
+        // adjust flags for customer role
+        semiconductorMaterial.setMaterialFlag(true);
+        semiconductorMaterial.setProductFlag(true);
+
         semiconductorMaterial = materialService.create(semiconductorMaterial);
         log.info(String.format("Created material: %s", semiconductorMaterial));
         List<Material> materialsFound = materialService.findAllMaterials();
@@ -128,7 +136,7 @@ public class DataInjectionCommandLineRunner implements CommandLineRunner {
 
         // customer + material
         Partner nonScenarioCustomer = createAndGetNonScenarioCustomer();
-        Material centralControlUnitEntity = getCentralControlUnitMaterial();
+        Material centralControlUnitEntity = getNewCentralControlUnitMaterial();
         centralControlUnitEntity.addPartnerToOrderedByParnters(nonScenarioCustomer);
         centralControlUnitEntity = materialService.create(centralControlUnitEntity);
         log.info(String.format("Created Product: %s", centralControlUnitEntity));
@@ -195,10 +203,12 @@ public class DataInjectionCommandLineRunner implements CommandLineRunner {
         ProductStockSammDto productStockSammDto = productStockSammMapper.toSamm(productStockDto);
         log.info(objectMapper.writeValueAsString(productStockSammDto));
     }
-
-    private void supplierRoleSetup() {
+    /**
+     * Generates an initial set of data for a supplier within the demonstration context. 
+     */
+    private void setupSupplierRole() {
         Partner customerPartner = createAndGetCustomerPartner();
-        Material semiconductorMaterial = getSemiconductorMaterial();
+        Material semiconductorMaterial = getNewSemiconductorMaterial();
         semiconductorMaterial.addPartnerToOrderedByParnters(customerPartner);
         semiconductorMaterial = materialService.create(semiconductorMaterial);
         log.info(String.format("Created product: %s", semiconductorMaterial));
@@ -227,9 +237,14 @@ public class DataInjectionCommandLineRunner implements CommandLineRunner {
     }
 
 
+    /**
+     * creates a new customer Partner entity, stores it to
+     * the database and returns this entity. 
+     * @return a reference to the newly created customer
+     */
     private Partner createAndGetCustomerPartner() {
         Partner customerPartnerEntity = new Partner(
-                "Sceanrio Customer",
+                "Scenario Customer",
                 true,
                 false,
                 "http://sokrates-controlplane:8084/api/v1/ids",
@@ -243,6 +258,11 @@ public class DataInjectionCommandLineRunner implements CommandLineRunner {
         return customerPartnerEntity;
     }
 
+    /**
+     * creates a new supplier Partner entity, stores it to
+     * the database and returns this entity. 
+     * @return a reference to the newly created supplier
+     */
     private Partner createAndGetSupplierPartner() {
         Partner supplierPartnerEntity = new Partner(
                 "Scenario Supplier",
@@ -259,6 +279,11 @@ public class DataInjectionCommandLineRunner implements CommandLineRunner {
         return supplierPartnerEntity;
     }
 
+    /**
+     * creates a new (non-scenario) customer entity, stores
+     * it to the database and returns this entity. 
+     * @return a reference to the newly created non-scenario customer
+     */
     private Partner createAndGetNonScenarioCustomer() {
         Partner nonScenarioCustomer = new Partner(
                 "Non-Scenario Customer",
@@ -275,7 +300,12 @@ public class DataInjectionCommandLineRunner implements CommandLineRunner {
         return nonScenarioCustomer;
     }
 
-    private Material getSemiconductorMaterial() {
+    /**
+     * creates a new semiconductor Material object. 
+     * Note: this object is not yet stored to the database
+     * @return a reference to the newly created semiconductor material
+     */
+    private Material getNewSemiconductorMaterial() {
         return new Material(
                 false,
                 true,
@@ -286,7 +316,12 @@ public class DataInjectionCommandLineRunner implements CommandLineRunner {
         );
     }
 
-    private Material getCentralControlUnitMaterial() {
+    /**
+     * creates a new central control unit Material object. 
+     * Note: this object is not yet stored to the database 
+     * @return a reference to the newly created central control unit material
+     */
+    private Material getNewCentralControlUnitMaterial() {
         return new Material(
                 false,
                 true,
