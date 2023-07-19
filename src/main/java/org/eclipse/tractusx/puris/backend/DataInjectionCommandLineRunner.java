@@ -85,8 +85,6 @@ public class DataInjectionCommandLineRunner implements CommandLineRunner {
     @Autowired
     private RequestService requestService;
 
-    @Autowired
-    private EdcAdapterService edcAdapterService;
 
     @Value("${puris.demonstrator.role}")
     private String demoRole;
@@ -333,7 +331,6 @@ public class DataInjectionCommandLineRunner implements CommandLineRunner {
     }
 
     private void createRequest() throws JsonProcessingException {
-        // TODO check if this is smart, or if we should use entities
         MessageHeaderDto messageHeaderDto = new MessageHeaderDto();
         messageHeaderDto.setRequestId(UUID.fromString("4979893e-dd6b-43db-b732-6e48b4ba35b3"));
         messageHeaderDto.setRespondAssetId("product-stock-response-api");
