@@ -30,8 +30,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import lombok.extern.slf4j.Slf4j;
+
 @RestController
 @RequestMapping("product-stock")
+@Slf4j
 public class ProductStockResponseApiController extends ResponseApiController {
 
     public ProductStockResponseApiController(ResponseApiService responseApiService) {
@@ -40,6 +45,16 @@ public class ProductStockResponseApiController extends ResponseApiController {
 
     @PostMapping("response")
     public ResponseEntity postResponse(@RequestBody ProductStockResponseDto productStockResponseDto) {
+        log.info("product-stock/response called");
+        
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            var jsonString = objectMapper.writeValueAsString(productStockResponseDto);
+            jsonString = objectMapper.readTree(jsonString).toPrettyString();
+            log.info("\n" + jsonString);
+        } catch (Exception e){
+
+        }
         return super.postResponse(productStockResponseDto);
     }
 

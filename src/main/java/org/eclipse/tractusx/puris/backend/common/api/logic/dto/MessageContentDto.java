@@ -42,7 +42,8 @@ import static com.fasterxml.jackson.annotation.JsonTypeInfo.Id.DEDUCTION;
 @NoArgsConstructor
 @JsonTypeInfo(use = DEDUCTION) // Intended usage
 @JsonSubTypes({@JsonSubTypes.Type(MessageContentErrorDto.class),
-        @JsonSubTypes.Type(ProductStockSammDto.class)})
+        @JsonSubTypes.Type(ProductStockSammDto.class)
+})
 public abstract class MessageContentDto {
 
     /**

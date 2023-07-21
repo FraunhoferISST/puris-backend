@@ -19,31 +19,33 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-package org.eclipse.tractusx.puris.backend.stock.domain.model;
+package org.eclipse.tractusx.puris.backend.stock.logic.dto;
 
-import jakarta.persistence.DiscriminatorValue;
-import jakarta.persistence.Entity;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
-import org.eclipse.tractusx.puris.backend.masterdata.domain.model.Material;
-import org.eclipse.tractusx.puris.backend.stock.domain.model.datatype.DT_StockTypeEnum;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import lombok.*;
 
-import java.util.Date;
-
-@Entity
-@DiscriminatorValue("MaterialStock")
+/**
+ * One object that is received as a response.
+ */
 @Getter
 @Setter
-@ToString(callSuper = true)
 @NoArgsConstructor
-public class MaterialStock extends Stock {
+@AllArgsConstructor
+@ToString
+public class ProductStockRequestForMaterialDto {
 
-    public MaterialStock(Material material, double quantity, String atSiteBpnl,
-                         Date lastUpdatedOn) {
-        super(material, quantity, atSiteBpnl, lastUpdatedOn);
-        super.setType(DT_StockTypeEnum.MATERIAL);
-    }
+    @NotNull
+    @JsonProperty("materialNumberCustomer")
+    private String materialNumberCustomer;
 
+    @Pattern(regexp = "(^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$)|(^urn:uuid:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$)")
+
+    @JsonProperty("materialNumberCatenaX")
+    private String materialNumberCatenaX;
+
+
+    @JsonProperty("materialNumberSupplier")
+    private String materialNumberSupplier;
 }

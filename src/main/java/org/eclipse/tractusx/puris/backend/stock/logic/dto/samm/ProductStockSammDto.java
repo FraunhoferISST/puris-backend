@@ -25,6 +25,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import org.eclipse.tractusx.puris.backend.common.api.logic.dto.MessageContentDto;
@@ -40,6 +41,7 @@ import java.util.Optional;
  */
 @Getter
 @Setter
+@EqualsAndHashCode(callSuper = false)
 public class ProductStockSammDto extends MessageContentDto {
 
     @NotNull
@@ -67,60 +69,4 @@ public class ProductStockSammDto extends MessageContentDto {
         this.materialNumberSupplier = materialNumberSupplier;
     }
 
-    /**
-     * Returns Positions
-     *
-     * @return {@link #positions}
-     */
-    public Collection<Position> getPositions() {
-        return this.positions;
-    }
-
-    /**
-     * Returns Customer Material Number
-     *
-     * @return {@link #materialNumberCustomer}
-     */
-    public String getMaterialNumberCustomer() {
-        return this.materialNumberCustomer;
-    }
-
-    /**
-     * Returns Material UUID Used in Catena-X
-     *
-     * @return {@link #materialNumberCatenaX}
-     */
-    public Optional<String> getMaterialNumberCatenaX() {
-        return this.materialNumberCatenaX;
-    }
-
-    /**
-     * Returns Supplier Material Number
-     *
-     * @return {@link #materialNumberSupplier}
-     */
-    public Optional<String> getMaterialNumberSupplier() {
-        return this.materialNumberSupplier;
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
-        final ProductStockSammDto that = (ProductStockSammDto) o;
-        return Objects.equals(positions, that.positions)
-                && Objects.equals(materialNumberCustomer, that.materialNumberCustomer)
-                && Objects.equals(materialNumberCatenaX, that.materialNumberCatenaX)
-                && Objects.equals(materialNumberSupplier, that.materialNumberSupplier);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(positions, materialNumberCustomer, materialNumberCatenaX, materialNumberSupplier);
-    }
 }

@@ -7,13 +7,21 @@ import org.eclipse.tractusx.puris.backend.common.edc.logic.dto.*;
 import org.eclipse.tractusx.puris.backend.common.edc.logic.dto.datatype.DT_ApiBusinessObjectEnum;
 import org.eclipse.tractusx.puris.backend.common.edc.logic.dto.datatype.DT_ApiMethodEnum;
 import org.eclipse.tractusx.puris.backend.common.edc.logic.dto.datatype.DT_DataAddressTypeEnum;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 /**
- * Static Utility Class for building EDC request body json objects.
+ * Utility Component for building EDC request body json objects.
  */
+@Component
 public class EDCRequestBodyBuilder {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+    @Value("${edr.endpoint}")
+    private String endpointDataReferenceEndpoint;
+
+    @Autowired
+    private ObjectMapper MAPPER;
 
     /**
      * Build an EDC request body for the creation of an asset (using an order).
@@ -22,7 +30,7 @@ public class EDCRequestBodyBuilder {
      * @param orderId  id of the created asset (currently has to match policy and contract id).
      * @return JsonNode used as requestBody for asset creation.
      */
-    public static JsonNode buildAssetRequestBody(String orderUrl, String orderId) {
+    public JsonNode buildAssetRequestBody(String orderUrl, String orderId) {
         var assetRequest = MAPPER.createObjectNode();
         var assetNode = MAPPER.createObjectNode();
         var assetPropNode = MAPPER.createObjectNode();
@@ -45,7 +53,7 @@ public class EDCRequestBodyBuilder {
      * @param orderId id of the policy to create (currently has to match contract and asset id).
      * @return JsonNode used as requestBody for policy creation.
      */
-    public static JsonNode buildPolicyRequestBody(String orderId) {
+    public JsonNode buildPolicyRequestBody(String orderId) {
         var policyNode = MAPPER.createObjectNode();
         var policySubNode = MAPPER.createObjectNode();
         policySubNode.set("prohibitions", MAPPER.createArrayNode());
@@ -70,7 +78,7 @@ public class EDCRequestBodyBuilder {
      * @param orderId id of the contract to create (currently has to match policy and asset id).
      * @return JsonNode used as requestBody for contract creation.
      */
-    public static JsonNode buildContractRequestBody(String orderId) {
+    public JsonNode buildContractRequestBody(String orderId) {
         var contractNode = MAPPER.createObjectNode();
         contractNode.put("id", orderId);
         contractNode.put("accessPolicyId", orderId);
@@ -87,26 +95,29 @@ public class EDCRequestBodyBuilder {
 
     /**
      * Build an EDC request body used for starting a negotiation.
-     *
-     * @param connectorAddress ids url of the negotiation counterparty.
-     * @param orderId          id of the negotiations target asset.
+     * @param connectorAddress      ids url of the negotiation counterparty.
+     * @param contractDefinitionId  id of a contract offer given by the counterparty.
+     * @param assetId               id of the negotiations target asset.
      * @return JsonNode used as requestBody for an EDC negotiation request.
      */
-    public static JsonNode buildNegotiationRequestBody(String connectorAddress, String orderId) {
+    public JsonNode buildNegotiationRequestBody(String connectorAddress,
+                                                       String contractDefinitionId,
+                                                       String assetId) {
         var negotiationNode = MAPPER.createObjectNode();
         negotiationNode.put("connectorId", "foo");
         negotiationNode.put("connectorAddress", connectorAddress);
+        negotiationNode.put("protocol", "ids-multipart");
         var offerNode = MAPPER.createObjectNode();
-        offerNode.put("offerId", orderId + ":foo");
-        offerNode.put("assetId", orderId);
+        offerNode.put("offerId", contractDefinitionId);
+        offerNode.put("assetId", assetId);
         var policyNode = MAPPER.createObjectNode();
-        policyNode.put("uid", orderId);
+        policyNode.put("uid", assetId);
         policyNode.set("prohibiitons", MAPPER.createArrayNode());
         policyNode.set("obligations", MAPPER.createArrayNode());
         var permissionArray = MAPPER.createArrayNode();
         var permissionNode = MAPPER.createObjectNode();
         permissionNode.put("edctype", "dataspaceconnector:permission");
-        permissionNode.put("target", orderId);
+        permissionNode.put("target", assetId);
         permissionNode.set("constraints", MAPPER.createArrayNode());
         var actionNode = MAPPER.createObjectNode();
         actionNode.put("type", "USE");
@@ -127,20 +138,33 @@ public class EDCRequestBodyBuilder {
      * @param orderId          id of the transfers target asset.
      * @return JsonNode used as requestBody for an EDC transfer request.
      */
-    public static JsonNode buildTransferRequestBody(String transferId,
+    public JsonNode buildTransferRequestBody(String transferId,
                                                     String connectorAddress,
                                                     String contractId,
                                                     String orderId) {
         var transferNode = MAPPER.createObjectNode();
+        transferNode.put("edctype", "dataspaceconnector:datarequest");
+        transferNode.put("protocol", "ids-multipart");
         transferNode.put("id", transferId);
         transferNode.put("connectorId", "foo");
         transferNode.put("connectorAddress", connectorAddress);
-        transferNode.put("contractId", orderId + ":" + contractId);
+        transferNode.put("contractId", contractId);
         transferNode.put("assetId", orderId);
         transferNode.put("managedResources", "false");
         var destinationNode = MAPPER.createObjectNode();
-        destinationNode.put("type", "HttpProxy");
+        var propertiesNode = MAPPER.createObjectNode();
+        propertiesNode.put("type", "HttpProxy");
+        destinationNode.set("properties", propertiesNode);
         transferNode.set("dataDestination", destinationNode);
+        var transferTypeNode = MAPPER.createObjectNode();
+        transferTypeNode.put("contentType", "application/octet-stream");
+        transferTypeNode.put("isFinite", true);
+        transferNode.set("transferType", transferTypeNode);
+        transferNode.put("managedResources", false);
+        propertiesNode = MAPPER.createObjectNode();
+        propertiesNode.put("receiver.http.endpoint", endpointDataReferenceEndpoint);
+        transferNode.set("properties", propertiesNode);
+
         return transferNode;
     }
 
@@ -151,7 +175,7 @@ public class EDCRequestBodyBuilder {
      * @param apiBaseUrl api baseUrl to get the data at
      * @return assetDto for creation.
      */
-    public static CreateAssetDto buildCreateAssetDtoForApi(DT_ApiMethodEnum method,
+    public CreateAssetDto buildCreateAssetDtoForApi(DT_ApiMethodEnum method,
                                                            String apiBaseUrl) {
         AssetPropertiesDto apiAssetPropertiesDto = new AssetPropertiesDto();
         if (method == DT_ApiMethodEnum.REQUEST) {

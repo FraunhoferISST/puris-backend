@@ -18,7 +18,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-package org.eclipse.tractusx.puris.backend.common.api.logic.dto;
+package org.eclipse.tractusx.puris.backend.stock.logic.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -27,21 +27,18 @@ import lombok.*;
 import org.eclipse.tractusx.puris.backend.common.api.domain.model.Request;
 import org.eclipse.tractusx.puris.backend.common.api.domain.model.Response;
 import org.eclipse.tractusx.puris.backend.common.api.domain.model.datatype.DT_RequestStateEnum;
-import org.eclipse.tractusx.puris.backend.stock.logic.dto.ProductStockRequestForMaterialDto;
+import org.eclipse.tractusx.puris.backend.common.api.logic.dto.MessageHeaderDto;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Dto for {@link org.eclipse.tractusx.puris.backend.common.api.domain.model.Request}
- */
 @Getter
 @Setter
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class RequestDto {
+public class ProductStockRequestDto {
 
     /**
      * State of the request.
@@ -88,8 +85,8 @@ public class RequestDto {
      * @param messageHeaderDto messageHeader of the request
      * @param payload          actual payload of the request
      */
-    public RequestDto(DT_RequestStateEnum state,
-                      MessageHeaderDto messageHeaderDto, List<ProductStockRequestForMaterialDto> payload) {
+    public ProductStockRequestDto(DT_RequestStateEnum state,
+                                  MessageHeaderDto messageHeaderDto, List<ProductStockRequestForMaterialDto> payload) {
         this.state = state;
         this.setPayload(payload);
         this.setHeader(messageHeaderDto);
